@@ -1,120 +1,107 @@
-import numpy as np
-import pandas as pd
 import streamlit as st
-from sklearn.datasets import load_iris
-from sklearn.cluster import KMeans
+from sklearn import metrics
+from sklearn.ensemble import GradientBoostingRegressor  # 导入回归模型
+from sklearn.model_selection import train_test_split
+import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 # GBDT_data_analysis_1.py
-img_url = 'https://img.zcool.cn/community/0156cb59439764a8012193a324fdaa.gif'  # 背景图片的网址
-st.markdown('''<style>.css-fg4pbf{background-image:url(''' + img_url + ''');
-background-size:100% 100%;background-attachment:fixed;}</style>
-''', unsafe_allow_html=True)  # 修改背景样式
+# 设置网页标题
+st.title('一个傻瓜式构建可视化 web的 Python 神器 -- streamlit')
+# 展示一级标题
+st.header('1. 原始数据')
+df = pd.read_excel('第8组数据.xlsx')
+if st.checkbox('显示原始数据集'):
+    st.subheader('原始数据集')
+    st.write(df)
+# st.table(df)  # 芜湖
+# print(df.head(5))
 
-iris = load_iris()
-data = iris['data']
+# 提取特征变量和目标变量
+X = df.drop(columns=(['输出参数1', '序号', '输出参数2']))
+y = df['输出参数1']
+st.header('1. 特征变量和目标变量数据集')
+if st.checkbox('显示特征变量数据集'):
+    st.subheader('特征变量数据集')
+    st.write(X)
+if st.checkbox('显示目标变量数据集'):
+    st.subheader('目标变量数据集')
+    st.write(y)
 
-st.title('K-Means交互式组件'.center(33, '-'))
+# st.table(X)
+# st.table(y)
 
-st.sidebar.expander('')
-st.sidebar.subheader('在下方调节你的参数')
-cluster_class = st.sidebar.selectbox('1.聚类数量:', list(range(2, 10)))
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=123)
+# X_train.to_excel(r'hahaha.xlsx')
+# 模型训练及搭建
 
-minmaxscaler = st.sidebar.radio('2.是否归一化:', ['是', '否'])
-if minmaxscaler == '是':
-    model_mms = MinMaxScaler().fit(data)
-    data = model_mms.transform(data)
+model = GradientBoostingRegressor(random_state=123)
+model.fit(X_train, y_train)
 
-figure = ['花瓣长度', '花瓣宽度', '花萼长度', '花萼宽度']
-figure1 = st.sidebar.selectbox('3.选择第一类展示特征:', ['花瓣长度', '花瓣宽度', '花萼长度', '花萼宽度'])
-figure2 = st.sidebar.selectbox('4.选择第二类展示特征:', ['花瓣长度', '花瓣宽度', '花萼长度', '花萼宽度'])
+# 模型预测与评估
+y_train_pred = model.predict(X_train)
+y_test_pred = model.predict(X_test)
+# 对比预测值和实际值
+a = pd.DataFrame()
+a['预测值'] = list(y_test_pred)
+a['实际值'] = list(y_test)
 
-
-def trans(select):
-    if select == '黑色':
-        return 'black'
-    elif select == '银色':
-        return 'silver'
-    elif select == '亮红色':
-        return 'lightcoral'
-    elif select == '棕色':
-        return 'brown'
-    elif select == '橙色':
-        return 'orange'
-    elif select == '金黄色':
-        return 'gold'
-    elif select == '黄色':
-        return 'yellow'
-    elif select == '绿色':
-        return 'lawngreen'
-    elif select == '天蓝色':
-        return 'cyan'
-    elif select == '紫色':
-        return 'purple'
-    elif select == '圆形':
-        return 'o'
-    elif select == '朝下三角':
-        return 'v'
-    elif select == '朝上三角形':
-        return '^'
-    elif select == '正方形':
-        return 's'
-    elif select == '五边形':
-        return 'p'
-    elif select == '星型':
-        return '*'
-    elif select == '六角形':
-        return 'h'
-    elif select == '+号':
-        return '+'
-    elif select == 'x号':
-        return 'x'
-    elif select == '小型菱形':
-        return 'd'
+st.header('1. 误差分析')
+# 解释方差分
+# explained_variance_score：解释方差分，这个指标用来衡量我们模型对数据集波动的解释程度，如果取值为1时，模型就完美，越小效果就越差。
+st.markdown('解释方差分=%.2f' % (metrics.explained_variance_score(y_test, y_test_pred)))
+# print(metrics.explained_variance_score(y_test, y_test_pred))
 
 
-choice = pd.DataFrame([])
-for i in range(1, cluster_class + 1):
-    col1, col2 = st.sidebar.columns(2)  # 分成两列
-    with col1:  # 第一列的东西
-        choice.loc[i, 'color'] = trans(st.selectbox(f'第{i}类颜色', ['黑色', '银色', '亮红色', '棕色', '橙色', '金黄色', '黄色',
-                                                                 '天蓝色', '紫色']))
-    with col2:  # 第二列的东西
-        choice.loc[i, 'shape'] = trans(st.selectbox(f'第{i}类形状', ['圆形', '朝下三角', '朝上三角形', '正方形', '五边形', '星型'
-            , '六角形', '+号', 'x号', '小型菱形']))
+# 平均绝对误差
+# 给定数据点的平均绝对误差，一般来说取值越小，模型的拟合效果就越好。
+st.markdown('平均绝对误差=%.2f' % (metrics.mean_absolute_error(y_test, y_test_pred)))
+# print(metrics.mean_absolute_error(y_test, y_test_pred))
 
-model = KMeans(n_clusters=cluster_class).fit(data)
-data_done = np.c_[data, model.labels_]
+# 均方误差
+train_err = metrics.mean_squared_error(y_train, y_train_pred)
+test_err = metrics.mean_squared_error(y_test, y_test_pred)
+st.markdown(f"训练集误差为{train_err}")
+st.markdown(f"测试集误差为{test_err}")
+# print(f"训练集误差为{train_err}")
+# print(f"测试集误差为{test_err}")
 
-# st.write(model.labels_)
-# st.write(model.cluster_centers_)
+# 查看模型预测效果(性能评估)
+score = model.score(X_test, y_test)
+st.markdown(f"当前模型预测准确度为{score}")
+# print(f"当前模型预测准确度为{score}")
 
-fig, ax = plt.subplots()
-for i in set(model.labels_):
-    index = data_done[:, -1] == i
-    color = choice.loc[i + 1, 'color']
-    shape = choice.loc[i + 1, 'shape']
-    x = data_done[index, figure.index(figure1)]  # 改选择特征
-    y = data_done[index, figure.index(figure2)]
-    ax.scatter(x, y, c=color, marker=shape)
-# plt.axis('off')
-font_dict = dict(fontsize=16,
-                 color='maroon',
-                 family='SimHei', )
-ax.set_xlabel(figure1, fontdict=font_dict)
-ax.set_ylabel(figure2, fontdict=font_dict)
-ax.set_title('散点图', fontdict=dict(fontsize=16, color='black', family='SimHei', ))
-ax.legend(set(model.labels_))
-ax.set_xticks([])
-ax.set_yticks([])
-# ax.tick_params(bottom=False,top=False,left=False,right=False)
-st.pyplot(fig)
+# 可视化
+X_train = np.array(X_train)  # 转换数据类型
+y_train = np.array(y_train)
 
-st.markdown('''<style>#root > div:nth-child(1) > div > div > div > div >
- section.css-1lcbmhc.e1fqkh3o3 > div.css-1adrfps.e1fqkh3o2
- {background:rgba(255,255,255,0.5)}</style>''', unsafe_allow_html=True)  # 侧边栏样式
+st.markdown(f"类型为{type(X_train)}")
+# dic={
+#     "特征变量(训练值)":list(X_train),
+#     "值(训练值)":list(y_train)
+# }
+# chart_data = pd.DataFrame(dic)
+# #
+# st.line_chart(chart_data)
 
-st.markdown('''<style>#root > div:nth-child(1) > div > div > div > div >
-section.main.css-1v3fvcr.egzxvld3 > div > div > div
- {background-size:100% 100% ;background:rgba(207,207,207,0.9);
-color:red; border-radius:5px;} </style>''', unsafe_allow_html=True)  # 底边样式
+# ax_01 = plt.subplot(111)
+# ax_01.spines['top'].set_visible(False)
+# ax_01.spines['right'].set_visible(False)
+# plt.plot(X_train, y_train, 'ro', markersize=1)
+# plt.xlabel('X_train', fontsize=16)
+# plt.ylabel('y_train_test', fontsize=16)
+# plt.plot(X_train, y_train_pred, 'bs', markersize=1)
+# plt.grid(True)
+# plt.show()
+# ax_02 = plt.subplot(111)
+# ax_02.spines['top'].set_visible(False)
+# ax_02.spines['right'].set_visible(False)
+#
+# X_test = np.array(X_test)
+# y_test = np.array(y_test)
+# plt.plot(X_test, y_test, 'ro', markersize=1)
+# plt.xlabel('X_test', fontsize=16)
+# plt.ylabel('y_test_pred', fontsize=16)
+# plt.plot(X_test, y_test_pred, 'bs', markersize=1)
+# plt.grid(True)
+# plt.show()
