@@ -12,9 +12,11 @@ import pymysql
 def load_data(sql):
     mydb = pymysql.connect(
         host='localhost',
+        port=3306,
         user='root',
+        passwd='asd25380',
         database='hebing_1',
-        passwd='asd25380'
+        charset='utf8'
     )
     cursor = mydb.cursor(pymysql.cursors.DictCursor)
     data_1 = []
