@@ -34,7 +34,7 @@ import pymysql
 #        'select  `HPC+HPT组合件同心度（mm）` from `1`']
 # data = load_data(sql)
 
-data=pd.read_excel('测试数据.xlsx')
+data=pd.read_csv('heart.csv')
 
 # 设置网页标题
 st.title('基于streamlit的可视化界面')
